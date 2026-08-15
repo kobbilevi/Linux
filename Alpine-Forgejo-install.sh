@@ -1,12 +1,35 @@
 #!/bin/sh
 set -e
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+DOCKER_SCRIPT_PATH="${SCRIPT_DIR}/install_docker.sh"
 
 URL_SSH_PUBLIC_KEY="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/SSHKey-FingerPrint.txt"
 URL_DOCKER_COMPOSE="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/Forgejo-docker-compose.yml"
+DOCKER_SCRIPT_URL="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/Alpine-Install-Docker-And-Docker-Compose.sh"
+
+echo "=== Starting Initial Setup Script ==="
 
 echo "=== 1. Updates & Package Installation ==="
 apk update && apk upgrade
-apk add docker docker-compose nano openssh-server git wget
+apk add nano openssh-server git wget
+
+echo "Target directory for downloads: ${SCRIPT_DIR}"
+
+# 2. Download and save the Docker script locally
+echo "Downloading Docker installation script..."
+wget -O "$DOCKER_SCRIPT_PATH" "$DOCKER_SCRIPT_URL"
+
+echo "Making the Docker script executable..."
+chmod +x "$DOCKER_SCRIPT_PATH"
+
+# 3. Execute the Docker script (and wait for it to finish)
+echo "Executing Docker installation script..."
+"$DOCKER_SCRIPT_PATH"
+
+# 4. Resume the rest of your initialization script
+echo "=== Resuming Main Initialization Script ==="
+echo "Docker installer is saved at: ${DOCKER_SCRIPT_PATH}"
+echo "Proceeding with final tasks..."
 
 echo "=== 2. Configuring Docker ==="
 rc-update add docker boot
@@ -33,5 +56,6 @@ echo "=== 5. Starting Forgejo ==="
 docker-compose up -d
 
 echo "=================================================="
+echo "======= All setups completed successfully! ======="
 echo " Installation complete! Forgejo is running."
 echo "=================================================="
