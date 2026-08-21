@@ -11,7 +11,8 @@ echo "=== Starting Docker & Docker Compose installation on Alpine Linux ==="
 
 # 2. Enable the Community Repository
 ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release)
-REPO_LINE="http://alpinelinux.org{ALPINE_VERSION}/community"
+REPO_LINE="https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/community"
+
 
 if ! grep -q "^${REPO_LINE}" /etc/apk/repositories; then
     echo "Enabling the community repository for version ${ALPINE_VERSION}..."
