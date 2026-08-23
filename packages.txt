@@ -1,5 +1,7 @@
+bind-tools
+bash
 curl
-git
-vim
-tmux
+wget
 htop
+tmux
+tzdata
