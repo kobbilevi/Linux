@@ -40,6 +40,7 @@ NTPOPTS=chrony
 
 # Disk target is dynamically injected by the wrapper script at runtime
 DISKOPTS="TARGET_DISK_PLACEHOLDER"
+DISKMODE="lvmsys"
 
 # Disable local cache/backup as we run directly off the physical disk
 LBUOPTS=none
