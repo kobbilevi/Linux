@@ -25,7 +25,7 @@ TIMEZONEOPTS="Asia/Jerusalem"
 PROXYOPTS=none
 
 # Official Alpine Linux CDN Mirror URL
-APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/"
+APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/latest-stable"
 
 # Create the deployment user dynamically at runtime
 USEROPTS="TARGET_USER_PLACEHOLDER"
