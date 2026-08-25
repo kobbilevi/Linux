@@ -39,7 +39,8 @@ ROOTSSHKEY=none
 NTPOPTS=chrony
 
 # Disk target is dynamically injected by the wrapper script at runtime
-DISKOPTS="TARGET_DISK_PLACEHOLDER"
+#DISKOPTS="TARGET_DISK_PLACEHOLDER"
+DISKOPTS="/dev/sda"
 DISKMODE="lvmsys"
 
 # Disable local cache/backup as we run directly off the physical disk
