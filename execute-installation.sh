@@ -13,7 +13,7 @@ GITHUB_REPO="Linux"
 GITHUB_BRANCH="main"
 
 # Constructing relative base URL from the variables above
-BASE_URL="https://githubusercontent.com/{GITHUB_USER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}"
+BASE_URL="https://githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}"
 # ====================================================
 
 # Fetch the raw answer file from GitHub ONLY if it's not already present locally
