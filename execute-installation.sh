@@ -63,7 +63,7 @@ echo "[+] Target installation disk auto-selected: $DETECTED_DISK"
 
 # Inject the detected disk path into the answer file before execution
 #sed -i "s|TARGET_DISK_PLACEHOLDER|-m lvmsys $DETECTED_DISK|g" answers.txt
-sed -i "s|TARGET_DISK_PLACEHOLDER|$DETECTED_DISK|g" answers.txt
+#sed -i "s|TARGET_DISK_PLACEHOLDER|$DETECTED_DISK|g" answers.txt
 
 
 # Run the official setup script using the custom answer file
