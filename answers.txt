@@ -2,7 +2,7 @@
 KEYMAPOPTS="us us"
 
 # Interactive prompt for hostname only
-HOSTNAMEOPTS="none"
+HOSTNAMEOPTS=""
 
 # Use the lightweight, modern device manager
 DEVDOPTS=mdevd
