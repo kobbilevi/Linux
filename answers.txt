@@ -29,7 +29,7 @@ APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/"
 
 # Create the deployment user dynamically at runtime
 USEROPTS="TARGET_USER_PLACEHOLDER"
-USERSSHKEY="https://tinyurl.com"
+USERSSHKEY="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/SSHKey.pub"
 
 # Handle SSH server manually via execution script for granular control
 SSHDOPTS=none
