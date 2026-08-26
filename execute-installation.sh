@@ -12,7 +12,7 @@ GITHUB_USER="kobbilevi"
 GITHUB_REPO="Linux"
 GITHUB_BRANCH="main"
 
-BASE_URL="https://githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}"
+BASE_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}"
 # ====================================================
 
 # Fetch the raw answer file from GitHub ONLY if it is not already present locally
