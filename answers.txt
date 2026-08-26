@@ -42,7 +42,7 @@ NTPOPTS=chrony
 #DISKOPTS="TARGET_DISK_PLACEHOLDER"
 DISKOPTS="/dev/sda"
 ERASE_DISKS="lvmsys"
-#DISKMODE="lvmsys"
+DISKMODE="lvmsys"
 
 # Disable local cache/backup as we run directly off the physical disk
 LBUOPTS=none
