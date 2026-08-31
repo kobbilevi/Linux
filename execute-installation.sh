@@ -15,7 +15,7 @@ INSTALL_TYPE_DEFAULT="sys"
 USE_LVM_DEFAULT="yes"
 USE_CRYPT_DEFAULT="no"
 
-echo "--> Downloading answers.txt from GitHub..."
+echo "--> Downloading answers.txt..."
 
 wget -q -O answers.txt "${BASE_URL}/answers.txt"
 
@@ -131,6 +131,7 @@ case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
 esac
 
 case "${INSTALL_TYPE}:${USE_LVM}:${USE_CRYPT}" in
+
     sys:no:no)
         INSTALL_MODE="sys"
         DISKOPTS="-m sys $DETECTED_DISK"
@@ -170,6 +171,7 @@ case "${INSTALL_TYPE}:${USE_LVM}:${USE_CRYPT}" in
         INSTALL_MODE="enclvmdata"
         DISKOPTS="-e -L -m data $DETECTED_DISK"
         ;;
+
 esac
 
 echo
@@ -190,7 +192,7 @@ sed -i "s|^DISKOPTS=.*|DISKOPTS=\"$DISKOPTS\"|g" answers.txt
 export ERASE_DISKS="$DETECTED_DISK"
 
 if [ "$INSTALL_TYPE" = "sys" ]; then
-    echo "--> Preparing eject utility in RAM..."
+    echo "--> Installing eject utility in RAM only..."
 
     if ! command -v eject >/dev/null 2>&1; then
         apk add --no-cache util-linux-misc
@@ -205,7 +207,7 @@ MNT_PREFIX=""
 
 if [ "$INSTALL_TYPE" = "sys" ]; then
 
-    echo "--> Preparing installed SYS system..."
+    echo "--> Locating installed SYS root..."
 
     TARGET_ROOT=""
 
@@ -214,8 +216,8 @@ if [ "$INSTALL_TYPE" = "sys" ]; then
         echo
         echo "===================================================="
         echo "Encrypted installation detected."
-        echo "The encryption password is required to unlock"
-        echo "the newly installed system for post-installation."
+        echo "Enter the encryption password to unlock the"
+        echo "installed system for post-installation."
         echo "===================================================="
         echo
 
@@ -371,6 +373,7 @@ if [ -d "$USER_HOME_DIR/.ssh" ]; then
     USER_GID=$(chroot ${MNT_PREFIX:-.} id -g "$TARGET_USER")
 
     chown -R "$USER_UID:$USER_GID" "$USER_HOME_DIR/.ssh"
+
 fi
 
 SSHD_CONFIG="${MNT_PREFIX}/etc/ssh/sshd_config"
@@ -393,7 +396,7 @@ fi
 
 if [ "$INSTALL_TYPE" = "data" ]; then
 
-    echo "--> Persisting DATA configuration with LBU..."
+    echo "--> Saving DATA changes with LBU..."
 
     lbu add /etc
     lbu add "/home/$TARGET_USER"
@@ -404,7 +407,7 @@ if [ "$INSTALL_TYPE" = "data" ]; then
 
 fi
 
-echo "--> Allowing pending operations to finish..."
+echo "--> Waiting for pending operations..."
 
 sleep 2
 
@@ -414,7 +417,7 @@ if [ "$INSTALL_TYPE" = "sys" ]; then
 
     sync
 
-    echo "--> Unmounting target filesystem..."
+    echo "--> Unmounting installed system..."
 
     umount /mnt/sys 2>/dev/null || true
     umount /mnt/proc 2>/dev/null || true
@@ -431,6 +434,7 @@ if [ "$INSTALL_TYPE" = "sys" ]; then
     fi
 
     if command -v eject >/dev/null 2>&1; then
+
         echo "--> Ejecting installation media..."
 
         if [ -e /dev/cdrom ]; then
@@ -438,11 +442,9 @@ if [ "$INSTALL_TYPE" = "sys" ]; then
         else
             eject >/dev/null 2>&1 || true
         fi
-    fi
-fi
 
-if [ "$INSTALL_TYPE" = "data" ]; then
-    sync
+    fi
+
 fi
 
 sync
