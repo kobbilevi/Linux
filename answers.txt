@@ -1,13 +1,9 @@
-# Keyboard layout configuration
 KEYMAPOPTS="us us"
 
-# Interactive prompt for hostname only
 HOSTNAMEOPTS=""
 
-# Device manager
 DEVDOPTS=mdevd
 
-# Network interface configuration
 INTERFACESOPTS="auto lo
 iface lo inet loopback
 
@@ -15,33 +11,23 @@ auto eth0
 iface eth0 inet dhcp
 "
 
-# DNS configuration
 DNSOPTS=none
 
-# Timezone configuration
 TIMEZONEOPTS="Asia/Jerusalem"
 
-# Proxy configuration
 PROXYOPTS=none
 
-# Alpine Linux repository
 APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/"
 
-# Deployment user
 USEROPTS="TARGET_USER_PLACEHOLDER"
 USERSSHKEY="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/SSHKey.pub"
 
-# SSH server
 SSHDOPTS=none
 ROOTSSHKEY=none
 
-# NTP client
 NTPOPTS=chrony
 
-# Disk configuration - populated by wrapper
 DISKOPTS="DISKOPTS_PLACEHOLDER"
-ERASE_DISKS="ERASE_DISKS_PLACEHOLDER"
 
-# LBU / APK cache
 LBUOPTS=none
 APKCACHEOPTS=none
