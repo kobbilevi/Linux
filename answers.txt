@@ -4,7 +4,7 @@ KEYMAPOPTS="us us"
 # Interactive prompt for hostname only
 HOSTNAMEOPTS=""
 
-# Use the lightweight, modern device manager
+# Device manager
 DEVDOPTS=mdevd
 
 # Network interface configuration
@@ -15,7 +15,7 @@ auto eth0
 iface eth0 inet dhcp
 "
 
-# Inherit DNS configurations dynamically via DHCP
+# DNS configuration
 DNSOPTS=none
 
 # Timezone configuration
@@ -24,25 +24,24 @@ TIMEZONEOPTS="Asia/Jerusalem"
 # Proxy configuration
 PROXYOPTS=none
 
-# Official Alpine Linux CDN Mirror URL
+# Alpine Linux repository
 APKREPOSOPTS="http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/"
 
-# Create the deployment user dynamically at runtime
+# Deployment user
 USEROPTS="TARGET_USER_PLACEHOLDER"
 USERSSHKEY="https://raw.githubusercontent.com/kobbilevi/Linux/refs/heads/main/SSHKey.pub"
 
-# Handle SSH server manually via execution script for granular control
+# SSH server
 SSHDOPTS=none
 ROOTSSHKEY=none
 
-# Modern and accurate NTP client
+# NTP client
 NTPOPTS=chrony
 
-# Disk target is dynamically injected by the wrapper script at runtime
-DISKOPTS="TARGET_DISKOPTS_PLACEHOLDER"
+# Disk configuration - populated by wrapper
+DISKOPTS="DISKOPTS_PLACEHOLDER"
+ERASE_DISKS="ERASE_DISKS_PLACEHOLDER"
 
-
-
-# Disable local cache/backup as we run directly off the physical disk
+# LBU / APK cache
 LBUOPTS=none
 APKCACHEOPTS=none
