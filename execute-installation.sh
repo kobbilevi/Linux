@@ -11,10 +11,16 @@ GITHUB_BRANCH="main"
 
 BASE_URL="https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/refs/heads/${GITHUB_BRANCH}"
 
+INSTALL_TYPE_DEFAULT="sys"
+USE_LVM_DEFAULT="yes"
+USE_CRYPT_DEFAULT="no"
+
+echo "--> Downloading answers.txt from GitHub..."
+
 wget -q -O answers.txt "${BASE_URL}/answers.txt"
 
 if [ ! -s answers.txt ]; then
-    echo "[-] Error: Failed to download answers.txt"
+    echo "[-] Error: answers.txt is missing or empty."
     exit 1
 fi
 
@@ -60,20 +66,26 @@ echo "[+] Installation disk: $DETECTED_DISK"
 
 select_with_timeout()
 {
-    prompt="$1"
-    default="$2"
+    PROMPT="$1"
+    DEFAULT="$2"
 
-    printf "%s [%s] (10 seconds): " "$prompt" "$default"
+    printf "%s [%s] (10 seconds): " "$PROMPT" "$DEFAULT"
+
+    ANSWER=""
 
     if read -r -t 10 ANSWER; then
-        [ -n "$ANSWER" ] || ANSWER="$default"
+        :
     else
-        ANSWER="$default"
+        ANSWER="$DEFAULT"
         printf "\n"
+    fi
+
+    if [ -z "$ANSWER" ]; then
+        ANSWER="$DEFAULT"
     fi
 }
 
-select_with_timeout "Install Alpine as SYS or DATA" "SYS"
+select_with_timeout "Install Alpine as SYS or DATA" "$INSTALL_TYPE_DEFAULT"
 
 case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
     sys)
@@ -83,12 +95,12 @@ case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
         INSTALL_TYPE="data"
         ;;
     *)
-        echo "[-] Invalid selection."
+        echo "[-] Invalid installation type."
         exit 1
         ;;
 esac
 
-select_with_timeout "Use LVM? (yes/no)" "yes"
+select_with_timeout "Use LVM? (yes/no)" "$USE_LVM_DEFAULT"
 
 case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
     yes|y)
@@ -98,12 +110,12 @@ case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
         USE_LVM="no"
         ;;
     *)
-        echo "[-] Invalid selection."
+        echo "[-] Invalid LVM selection."
         exit 1
         ;;
 esac
 
-select_with_timeout "Use disk encryption? (yes/no)" "no"
+select_with_timeout "Use disk encryption? (yes/no)" "$USE_CRYPT_DEFAULT"
 
 case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
     yes|y)
@@ -113,50 +125,50 @@ case "$(printf '%s' "$ANSWER" | tr '[:upper:]' '[:lower:]')" in
         USE_CRYPT="no"
         ;;
     *)
-        echo "[-] Invalid selection."
+        echo "[-] Invalid encryption selection."
         exit 1
         ;;
 esac
 
-case "${USE_CRYPT}:${USE_LVM}:${INSTALL_TYPE}" in
-    no:no:sys)
-        DISKOPTS="-m sys $DETECTED_DISK"
+case "${INSTALL_TYPE}:${USE_LVM}:${USE_CRYPT}" in
+    sys:no:no)
         INSTALL_MODE="sys"
+        DISKOPTS="-m sys $DETECTED_DISK"
         ;;
 
-    no:yes:sys)
-        DISKOPTS="-L -m sys $DETECTED_DISK"
+    sys:yes:no)
         INSTALL_MODE="lvmsys"
+        DISKOPTS="-L -m sys $DETECTED_DISK"
         ;;
 
-    yes:no:sys)
+    sys:no:yes)
+        INSTALL_MODE="encsys"
         DISKOPTS="-e -m sys $DETECTED_DISK"
-        INSTALL_MODE="cryptsys"
         ;;
 
-    yes:yes:sys)
-        DISKOPTS="-e -L -m sys $DETECTED_DISK"
+    sys:yes:yes)
         INSTALL_MODE="enclvmsys"
+        DISKOPTS="-e -L -m sys $DETECTED_DISK"
         ;;
 
-    no:no:data)
-        DISKOPTS="-m data $DETECTED_DISK"
+    data:no:no)
         INSTALL_MODE="data"
+        DISKOPTS="-m data $DETECTED_DISK"
         ;;
 
-    no:yes:data)
-        DISKOPTS="-L -m data $DETECTED_DISK"
+    data:yes:no)
         INSTALL_MODE="lvmdata"
+        DISKOPTS="-L -m data $DETECTED_DISK"
         ;;
 
-    yes:no:data)
-        DISKOPTS="-e -m data $DETECTED_DISK"
+    data:no:yes)
         INSTALL_MODE="encdata"
+        DISKOPTS="-e -m data $DETECTED_DISK"
         ;;
 
-    yes:yes:data)
-        DISKOPTS="-e -L -m data $DETECTED_DISK"
+    data:yes:yes)
         INSTALL_MODE="enclvmdata"
+        DISKOPTS="-e -L -m data $DETECTED_DISK"
         ;;
 esac
 
@@ -175,56 +187,107 @@ echo
 
 sed -i "s|^DISKOPTS=.*|DISKOPTS=\"$DISKOPTS\"|g" answers.txt
 
-sed -i "s|^ERASE_DISKS=.*|ERASE_DISKS=\"$DETECTED_DISK\"|g" answers.txt
+export ERASE_DISKS="$DETECTED_DISK"
 
-if [ "$INSTALL_TYPE" = "data" ]; then
-    sed -i 's|^LBUOPTS=.*|LBUOPTS="none"|g' answers.txt
-    sed -i 's|^APKCACHEOPTS=.*|APKCACHEOPTS="none"|g' answers.txt
-else
-    sed -i 's|^LBUOPTS=.*|LBUOPTS="none"|g' answers.txt
-    sed -i 's|^APKCACHEOPTS=.*|APKCACHEOPTS="none"|g' answers.txt
+if [ "$INSTALL_TYPE" = "sys" ]; then
+    echo "--> Preparing eject utility in RAM..."
+
+    if ! command -v eject >/dev/null 2>&1; then
+        apk add --no-cache util-linux-misc
+    fi
 fi
+
+echo "--> Starting Alpine installation..."
 
 setup-alpine -f answers.txt
 
-TARGET_ROOT=""
 MNT_PREFIX=""
 
 if [ "$INSTALL_TYPE" = "sys" ]; then
 
-    echo "--> Locating installed SYS root..."
+    echo "--> Preparing installed SYS system..."
 
-    if command -v lvs >/dev/null 2>&1; then
-        vgchange -ay >/dev/null 2>&1 || true
+    TARGET_ROOT=""
 
-        TARGET_ROOT=$(
-            lvs --noheadings -o lv_path 2>/dev/null |
-            sed 's/^[[:space:]]*//' |
-            grep '/lv_root$' |
-            head -n 1
-        )
-    fi
+    if [ "$USE_CRYPT" = "yes" ]; then
 
-    if [ -z "$TARGET_ROOT" ]; then
-        if [ -b "${DETECTED_DISK}2" ]; then
-            TARGET_ROOT="${DETECTED_DISK}2"
-        elif [ -b "${DETECTED_DISK}3" ]; then
-            TARGET_ROOT="${DETECTED_DISK}3"
+        echo
+        echo "===================================================="
+        echo "Encrypted installation detected."
+        echo "The encryption password is required to unlock"
+        echo "the newly installed system for post-installation."
+        echo "===================================================="
+        echo
+
+        CRYPT_PART=""
+
+        for part in $(lsblk -lnpo NAME "$DETECTED_DISK" 2>/dev/null); do
+            if cryptsetup isLuks "$part" >/dev/null 2>&1; then
+                CRYPT_PART="$part"
+                break
+            fi
+        done
+
+        if [ -z "$CRYPT_PART" ]; then
+            echo "[-] Error: Could not locate LUKS partition."
+            exit 1
+        fi
+
+        echo "[+] LUKS device: $CRYPT_PART"
+        echo "--> Unlocking encrypted root..."
+
+        cryptsetup open "$CRYPT_PART" root
+
+        if [ "$USE_LVM" = "yes" ]; then
+            echo "--> Activating LVM..."
+
+            vgchange -ay
+
+            TARGET_ROOT=$(
+                lvs --noheadings --options lv_path 2>/dev/null |
+                sed 's/^[[:space:]]*//' |
+                grep '/lv_root$' |
+                head -n 1
+            )
+        else
+            TARGET_ROOT="/dev/mapper/root"
+        fi
+
+    else
+
+        if [ "$USE_LVM" = "yes" ]; then
+
+            echo "--> Activating LVM..."
+
+            vgchange -ay
+
+            TARGET_ROOT=$(
+                lvs --noheadings --options lv_path 2>/dev/null |
+                sed 's/^[[:space:]]*//' |
+                grep '/lv_root$' |
+                head -n 1
+            )
+
+        else
+
+            if [ -b "${DETECTED_DISK}2" ]; then
+                TARGET_ROOT="${DETECTED_DISK}2"
+            elif [ -b "${DETECTED_DISK}3" ]; then
+                TARGET_ROOT="${DETECTED_DISK}3"
+            fi
+
         fi
     fi
 
     if [ -z "$TARGET_ROOT" ] || [ ! -b "$TARGET_ROOT" ]; then
-        if [ -b "/dev/mapper/root" ]; then
-            TARGET_ROOT="/dev/mapper/root"
-        else
-            echo "[-] Error: Could not locate installed root filesystem."
-            exit 1
-        fi
+        echo "[-] Error: Could not locate installed root filesystem."
+        exit 1
     fi
 
     echo "[+] Installed root: $TARGET_ROOT"
 
     mount "$TARGET_ROOT" /mnt
+
     MNT_PREFIX="/mnt"
 
     if [ -b "${DETECTED_DISK}1" ]; then
@@ -247,24 +310,6 @@ else
 
     MNT_PREFIX=""
 
-    mkdir -p /media/lbu
-
-    echo "--> Preparing persistent DATA storage for LBU..."
-
-    if mountpoint -q /var; then
-        mount --bind /var /media/lbu
-    else
-        echo "[-] Error: /var is not mounted."
-        exit 1
-    fi
-
-    setup-lbu /media/lbu
-
-    mkdir -p /media/lbu/cache/apk
-
-    if [ ! -L /etc/apk/cache ]; then
-        setup-apkcache /media/lbu/cache/apk
-    fi
 fi
 
 echo "--> Configuring password for user '$TARGET_USER'..."
@@ -279,7 +324,7 @@ echo "--> Upgrading installed packages..."
 
 chroot ${MNT_PREFIX:-.} apk upgrade
 
-echo "--> Fetching package list..."
+echo "--> Downloading package list..."
 
 wget -q -O packages.txt "${BASE_URL}/packages.txt"
 
@@ -315,6 +360,7 @@ chroot ${MNT_PREFIX:-.} rc-update add sshd default || true
 USER_HOME_DIR="${MNT_PREFIX}/home/$TARGET_USER"
 
 if [ -d "$USER_HOME_DIR/.ssh" ]; then
+
     chmod 700 "$USER_HOME_DIR/.ssh"
 
     if [ -f "$USER_HOME_DIR/.ssh/authorized_keys" ]; then
@@ -330,8 +376,10 @@ fi
 SSHD_CONFIG="${MNT_PREFIX}/etc/ssh/sshd_config"
 
 if [ -f "$SSHD_CONFIG" ]; then
+
     sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication no/' "$SSHD_CONFIG"
     sed -i 's/^PasswordAuthentication .*/PasswordAuthentication no/' "$SSHD_CONFIG"
+
     sed -i 's/^#PermitRootLogin .*/PermitRootLogin no/' "$SSHD_CONFIG"
     sed -i 's/^PermitRootLogin .*/PermitRootLogin no/' "$SSHD_CONFIG"
 
@@ -340,23 +388,30 @@ if [ -f "$SSHD_CONFIG" ]; then
 
     grep -q '^PermitRootLogin no$' "$SSHD_CONFIG" ||
         echo "PermitRootLogin no" >> "$SSHD_CONFIG"
+
 fi
 
 if [ "$INSTALL_TYPE" = "data" ]; then
-    echo "--> Committing DATA configuration to LBU..."
+
+    echo "--> Persisting DATA configuration with LBU..."
 
     lbu add /etc
     lbu add "/home/$TARGET_USER"
 
     sync
+
     lbu commit -d
+
 fi
 
-echo "--> Allowing background processes to finish..."
+echo "--> Allowing pending operations to finish..."
+
 sleep 2
 
 if [ "$INSTALL_TYPE" = "sys" ]; then
+
     echo "--> Syncing before cleanup..."
+
     sync
 
     echo "--> Unmounting target filesystem..."
@@ -366,13 +421,30 @@ if [ "$INSTALL_TYPE" = "sys" ]; then
     umount /mnt/dev 2>/dev/null || true
     umount /mnt/boot 2>/dev/null || true
     umount /mnt 2>/dev/null || true
+
+    if [ "$USE_LVM" = "yes" ]; then
+        vgchange -an >/dev/null 2>&1 || true
+    fi
+
+    if [ "$USE_CRYPT" = "yes" ]; then
+        cryptsetup close root >/dev/null 2>&1 || true
+    fi
+
+    if command -v eject >/dev/null 2>&1; then
+        echo "--> Ejecting installation media..."
+
+        if [ -e /dev/cdrom ]; then
+            eject /dev/cdrom >/dev/null 2>&1 || true
+        else
+            eject >/dev/null 2>&1 || true
+        fi
+    fi
 fi
 
 if [ "$INSTALL_TYPE" = "data" ]; then
-    umount /media/lbu 2>/dev/null || true
+    sync
 fi
 
-echo "--> Final filesystem sync..."
 sync
 
 echo "===================================================="
@@ -380,4 +452,5 @@ echo "Installation completed successfully!"
 echo "===================================================="
 
 echo "--> Rebooting..."
+
 reboot
